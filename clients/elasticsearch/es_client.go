@@ -39,7 +39,7 @@ func Init() {
 
 	client, err := elastic.NewClient(
 		elastic.SetURL("http://127.0.0.1:9200"),
-		elastic.SetBasicAuth(es_username, es_password),
+		elastic.SetBasicAuth(username, password),
 		elastic.SetSniff(false),
 		elastic.SetHealthcheckInterval(10*time.Second),
 		elastic.SetErrorLog(log),
