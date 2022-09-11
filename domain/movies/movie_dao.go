@@ -27,6 +27,7 @@ func (i *Movie) Save() rest_errors.RestErr {
 
 func (i *Movie) Get() rest_errors.RestErr {
 	itemId := i.Id
+
 	result, err := elasticsearch.Client.Get(indexItems, typeItem, i.Id)
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {
@@ -34,15 +35,18 @@ func (i *Movie) Get() rest_errors.RestErr {
 		}
 		return rest_errors.NewInternalServerError(fmt.Sprintf("error when trying to get id %s", i.Id), errors.New("database_error"))
 	}
-
+	
 	bytes, err := result.Source.MarshalJSON()
 	if err != nil {
 		return rest_errors.NewInternalServerError("error ehrn trying to parse database response", errors.New("database_error"))
 	}
+	
 	if err := json.Unmarshal(bytes, &i); err != nil {
 		return rest_errors.NewInternalServerError("error ehrn trying to parse database response", errors.New("database_error"))
 	}
+	
 	i.Id = itemId
+	// i.AvailableQuantity = i.AvailableQuantity - 1
 	return nil
 }
 
@@ -67,4 +71,16 @@ func (i *Movie) Search(query queries.EsQuery) ([]Movie, rest_errors.RestErr) {
 		return nil, rest_errors.NewNotFoundError("no items found matching given criteria")
 	}
 	return items, nil
+}
+func (i *Movie) Update() rest_errors.RestErr {
+	movieId := i.Id
+	
+	result, err := elasticsearch.Client.Update(indexItems, typeItem, i.Id)
+
+	if err != nil {
+		return rest_errors.NewInternalServerError("error when trying to update item", errors.New("database_error"))
+	}
+	fmt.Println(result)
+	i.Id = movieId
+	return nil
 }

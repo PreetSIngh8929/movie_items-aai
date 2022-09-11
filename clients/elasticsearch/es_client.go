@@ -3,12 +3,22 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/PreetSIngh8929/movie_utils-go/logger"
 	"github.com/olivere/elastic"
 )
 
+const (
+	es_username = "mysql_users_username"
+	es_password = "mysql_users_password"
+)
+
+var (
+	username = os.Getenv(es_username)
+	password = os.Getenv(es_password)
+)
 var (
 	Client esClientInterface = &esClient{}
 )
@@ -21,6 +31,7 @@ type esClientInterface interface {
 	Index(string, string, interface{}) (*elastic.IndexResponse, error)
 	Get(string, string, string) (*elastic.GetResult, error)
 	Search(string, elastic.Query) (*elastic.SearchResult, error)
+	Update(string, string, string) (*elastic.UpdateResponse, error)
 }
 
 func Init() {
@@ -28,13 +39,14 @@ func Init() {
 
 	client, err := elastic.NewClient(
 		elastic.SetURL("http://127.0.0.1:9200"),
-		elastic.SetBasicAuth("elastic", "pKgyq*gN=8VWaypMC5nR"),
+		elastic.SetBasicAuth(es_username, es_password),
 		elastic.SetSniff(false),
 		elastic.SetHealthcheckInterval(10*time.Second),
 		elastic.SetErrorLog(log),
 		elastic.SetInfoLog(log),
 	)
 	if err != nil {
+
 		panic(err)
 	}
 	Client.setClient(client)
@@ -82,4 +94,20 @@ func (c *esClient) Search(index string, query elastic.Query) (*elastic.SearchRes
 		return nil, err
 	}
 	return result, nil
+}
+func (c *esClient) Update(index string, docType string, id string) (*elastic.UpdateResponse, error) {
+	ctx := context.Background()
+	result, err := c.client.Update().
+		Index(index).
+		Type(docType).
+		Id(id).
+		Script(elastic.NewScript("ctx._source.available_quantity += params.num").Param("num", 1)).
+		Upsert(map[string]interface{}{"available_quantity": 0}).
+		Do(ctx)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println(result.Id, result.Version)
+	return result, err
 }

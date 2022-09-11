@@ -25,6 +25,7 @@ type itemsControllerInterface interface {
 	Get(w http.ResponseWriter, r *http.Request)
 	Search(w http.ResponseWriter, r *http.Request)
 	Book(w http.ResponseWriter, r *http.Request)
+	Cancel(w http.ResponseWriter, r *http.Request)
 }
 type itemsController struct {
 }
@@ -102,9 +103,40 @@ func (c *itemsController) Search(w http.ResponseWriter, r *http.Request) {
 }
 func (c *itemsController) Book(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	itemId := strings.TrimSpace(vars["id"])
-	item, err := services.MoviesService.Update(itemId)
+	movieId := strings.TrimSpace(vars["id"])
+
+	var movie movies.Movie
+
+	movie.Id = movieId
+
+	isPartial := r.Method == "PUT"
+
+	item, err := services.MoviesService.Update(isPartial, movie)
+	
 	if err != nil {
+		fmt.Println("error is")
+		fmt.Println(err)
+		http_utils.ResponseError(w, err)
+		return
+	}
+
+	http_utils.ResponseJson(w, http.StatusOK, item)
+}
+func (c *itemsController) Cancel(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	movieId := strings.TrimSpace(vars["id"])
+
+	var movie movies.Movie
+
+	movie.Id = movieId
+
+	isPartial := r.Method == "PUT"
+
+	item, err := services.MoviesService.Cancel(isPartial, movie)
+	
+	if err != nil {
+		fmt.Println("error is")
+		fmt.Println(err)
 		http_utils.ResponseError(w, err)
 		return
 	}
